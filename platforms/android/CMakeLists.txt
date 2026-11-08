@@ -13,6 +13,20 @@ foreach(retired KOBALT_DEPENDENCIES KOBALT_ASSETS)
     unset(${retired} CACHE)
 endforeach()
 set(source "${KOBALT_ROOT}/src")
+# Optional tuning for one device family. CPU tuning reaches the static
+# dependencies through the compiler flags, which select their own cache key.
+set(KOBALT_ANDROID_TUNE_CPU "" CACHE STRING "CPU to schedule code for, such as cortex-a73; empty for generic ARM64")
+# ThinLTO covers the application code only: the reader renames FreeType symbols
+# inside the compiled CREngine archive, which llvm-objcopy cannot do for LTO bitcode.
+option(KOBALT_ANDROID_LTO "Link the application code with ThinLTO" OFF)
+if(KOBALT_ANDROID_TUNE_CPU)
+    if(NOT KOBALT_ANDROID_TUNE_CPU MATCHES "^[a-z0-9.+-]+$")
+        message(FATAL_ERROR "Invalid KOBALT_ANDROID_TUNE_CPU: ${KOBALT_ANDROID_TUNE_CPU}")
+    endif()
+    # -mtune changes instruction scheduling only, so the APK still runs on any ARM64 device.
+    string(APPEND CMAKE_C_FLAGS " -mtune=${KOBALT_ANDROID_TUNE_CPU}")
+    string(APPEND CMAKE_CXX_FLAGS " -mtune=${KOBALT_ANDROID_TUNE_CPU}")
+endif()
 include("${KOBALT_ROOT}/dependencies/cache.cmake")
 kobalt_dependencies()
 add_subdirectory("${KOBALT_ROOT}/assets" "${CMAKE_CURRENT_BINARY_DIR}/assets")
@@ -89,6 +103,10 @@ target_link_libraries(kobalt_android PRIVATE Qt6::Widgets Qt6::Network Qt6::Sens
     "${prefix}/lib/libjpeg.a" "${prefix}/lib/liblunasvg.a" "${prefix}/lib/libfreetype.a"
     "${prefix}/lib/libfribidi.a" "${prefix}/lib/libunibreak.a" "${prefix}/lib/libpng16.a" z)
 target_link_options(kobalt_android PRIVATE -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384)
+if(KOBALT_ANDROID_LTO)
+    target_compile_options(kobalt_android PRIVATE -flto=thin)
+    target_link_options(kobalt_android PRIVATE -flto=thin)
+endif()
 set_target_properties(kobalt_android PROPERTIES QT_ANDROID_EXTRA_LIBS "${openssl}/libcrypto_3.so;${openssl}/libssl_3.so")
 qt_add_resources(kobalt_android android_assets BIG_RESOURCES PREFIX "/android-assets" FILES ${bundled})
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/asset-manifest.json" PROPERTIES QT_RESOURCE_ALIAS manifest.json)

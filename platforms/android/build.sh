@@ -14,6 +14,11 @@ release=${KOBALT_ANDROID_RELEASE:-0}
 # An optimized development build compiles like a release but keeps the Kobalt Dev identity and debug key.
 optimized=${KOBALT_ANDROID_OPTIMIZED:-0}
 [[ "$optimized" == 0 || "$optimized" == 1 ]] || { echo 'KOBALT_ANDROID_OPTIMIZED must be 0 or 1' >&2; exit 2; }
+# Optional device tuning: a CPU name for -mtune, and ThinLTO across the application and its dependencies.
+tune_cpu=${KOBALT_ANDROID_TUNE_CPU:-}
+[[ -z "$tune_cpu" || "$tune_cpu" =~ ^[a-z0-9.+-]+$ ]] || { echo 'KOBALT_ANDROID_TUNE_CPU must be a CPU name such as cortex-a73' >&2; exit 2; }
+lto=${KOBALT_ANDROID_LTO:-0}
+[[ "$lto" == 0 || "$lto" == 1 ]] || { echo 'KOBALT_ANDROID_LTO must be 0 or 1' >&2; exit 2; }
 if [[ $release == 1 && -z ${KOBALT_RELEASE_VERSION:-} && ! -f $root/source-info.json ]]; then
     echo 'Missing KOBALT_RELEASE_VERSION' >&2; exit 2
 fi
@@ -33,7 +38,7 @@ if [[ "$release" == 1 ]]; then
     extra+=(--volume "$KOBALT_ANDROID_KEYSTORE:/signing/release.keystore:ro")
 fi
 "$engine" run --rm --user "$(id -u):$(id -g)" \
-    "${extra[@]}" -e KOBALT_RELEASE_VERSION -e KOBALT_ANDROID_RELEASE="$release" -e KOBALT_ANDROID_OPTIMIZED="$optimized" \
+    "${extra[@]}" -e KOBALT_RELEASE_VERSION -e KOBALT_ANDROID_RELEASE="$release" -e KOBALT_ANDROID_OPTIMIZED="$optimized" -e KOBALT_ANDROID_TUNE_CPU="$tune_cpu" -e KOBALT_ANDROID_LTO="$lto" \
     -e KOBALT_ANDROID_KEYSTORE=/signing/release.keystore -e KOBALT_ANDROID_KEY_ALIAS \
     -e KOBALT_ANDROID_KEYSTORE_PASSWORD -e KOBALT_ANDROID_KEY_PASSWORD -e KOBALT_ANDROID_CERT_SHA256 \
     -e KOBALT_ANDROID_VERSION_CODE="${KOBALT_ANDROID_VERSION_CODE:-1}" \
@@ -54,6 +59,9 @@ fi
             export QT_ANDROID_KEYSTORE_KEY_PASS=android
         fi
         if [[ $KOBALT_ANDROID_RELEASE == 1 ]]; then options=(-DKOBALT_ANDROID_RELEASE=ON -DCMAKE_BUILD_TYPE=Release); fi
+        # Pass both tuning settings every time, so a reused output drops them when they are unset.
+        options+=(-DKOBALT_ANDROID_TUNE_CPU="$KOBALT_ANDROID_TUNE_CPU")
+        if [[ $KOBALT_ANDROID_LTO == 1 ]]; then options+=(-DKOBALT_ANDROID_LTO=ON); else options+=(-DKOBALT_ANDROID_LTO=OFF); fi
         cmake --preset android "${options[@]}" -DKOBALT_ANDROID_VERSION_CODE="$KOBALT_ANDROID_VERSION_CODE" \
             -DKOBALT_SDK_ID="$4" -DKOBALT_DEPENDENCY_JOBS="$1" -DKOBALT_DEPENDENCY_CACHE=/dependency-cache -DKOBALT_COMMIT="$2" -DKOBALT_COMMIT_MODIFIED="$3"
         echo "Configure: $((SECONDS - started)) seconds"
