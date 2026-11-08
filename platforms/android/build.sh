@@ -11,6 +11,9 @@ read -r arch sdk_id < <("$engine" image inspect "$image" --format '{{.Architectu
 mkdir -p "$root/build/android-$arch" "$root/build/gradle"
 release=${KOBALT_ANDROID_RELEASE:-0}
 [[ "$release" == 0 || "$release" == 1 ]] || { echo 'KOBALT_ANDROID_RELEASE must be 0 or 1' >&2; exit 2; }
+# An optimized development build compiles like a release but keeps the Kobalt Dev identity and debug key.
+optimized=${KOBALT_ANDROID_OPTIMIZED:-0}
+[[ "$optimized" == 0 || "$optimized" == 1 ]] || { echo 'KOBALT_ANDROID_OPTIMIZED must be 0 or 1' >&2; exit 2; }
 if [[ $release == 1 && -z ${KOBALT_RELEASE_VERSION:-} && ! -f $root/source-info.json ]]; then
     echo 'Missing KOBALT_RELEASE_VERSION' >&2; exit 2
 fi
@@ -30,7 +33,7 @@ if [[ "$release" == 1 ]]; then
     extra+=(--volume "$KOBALT_ANDROID_KEYSTORE:/signing/release.keystore:ro")
 fi
 "$engine" run --rm --user "$(id -u):$(id -g)" \
-    "${extra[@]}" -e KOBALT_RELEASE_VERSION -e KOBALT_ANDROID_RELEASE="$release" \
+    "${extra[@]}" -e KOBALT_RELEASE_VERSION -e KOBALT_ANDROID_RELEASE="$release" -e KOBALT_ANDROID_OPTIMIZED="$optimized" \
     -e KOBALT_ANDROID_KEYSTORE=/signing/release.keystore -e KOBALT_ANDROID_KEY_ALIAS \
     -e KOBALT_ANDROID_KEYSTORE_PASSWORD -e KOBALT_ANDROID_KEY_PASSWORD -e KOBALT_ANDROID_CERT_SHA256 \
     -e KOBALT_ANDROID_VERSION_CODE="${KOBALT_ANDROID_VERSION_CODE:-1}" \
@@ -42,7 +45,14 @@ fi
         exec 9>"/work/build/android-$KOBALT_ANDROID_HOST_ARCH/build.lock"
         flock -n 9 || { echo "Android output is in use by another build" >&2; exit 1; }
         started=$SECONDS
-        options=(-DKOBALT_ANDROID_RELEASE=OFF)
+        options=(-DKOBALT_ANDROID_RELEASE=OFF -DCMAKE_BUILD_TYPE=Debug)
+        if [[ $KOBALT_ANDROID_OPTIMIZED == 1 ]]; then
+            options=(-DKOBALT_ANDROID_RELEASE=OFF -DCMAKE_BUILD_TYPE=Release)
+            # The public debug key under platforms/android/app/ signs Kobalt Dev.
+            export QT_ANDROID_KEYSTORE_PATH=/work/platforms/android/app/debug.keystore
+            export QT_ANDROID_KEYSTORE_ALIAS=androiddebugkey QT_ANDROID_KEYSTORE_STORE_PASS=android
+            export QT_ANDROID_KEYSTORE_KEY_PASS=android
+        fi
         if [[ $KOBALT_ANDROID_RELEASE == 1 ]]; then options=(-DKOBALT_ANDROID_RELEASE=ON -DCMAKE_BUILD_TYPE=Release); fi
         cmake --preset android "${options[@]}" -DKOBALT_ANDROID_VERSION_CODE="$KOBALT_ANDROID_VERSION_CODE" \
             -DKOBALT_SDK_ID="$4" -DKOBALT_DEPENDENCY_JOBS="$1" -DKOBALT_DEPENDENCY_CACHE=/dependency-cache -DKOBALT_COMMIT="$2" -DKOBALT_COMMIT_MODIFIED="$3"

@@ -117,6 +117,11 @@ set(package_source "${CMAKE_CURRENT_BINARY_DIR}/android-package")
 file(READ "${QT6_INSTALL_PREFIX}/src/android/templates/build.gradle" qt_gradle)
 configure_file(app/debug-signing.gradle.in debug-signing.gradle @ONLY)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/debug-signing.gradle" signing)
+if(NOT KOBALT_ANDROID_RELEASE AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # An optimized Kobalt Dev build is a release package. androiddeployqt signs it
+    # with the public debug key, which build.sh names through the environment.
+    set(QT_ANDROID_SIGN_APK ON)
+endif()
 file(GENERATE OUTPUT "${package_source}/build.gradle" CONTENT "${qt_gradle}\n${signing}")
 configure_file(app/AndroidManifest.xml.in "${package_source}/AndroidManifest.xml" @ONLY)
 configure_file("${boox_jar}" "${package_source}/libs/hiddenapibypass.jar" COPYONLY)
