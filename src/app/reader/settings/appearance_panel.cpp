@@ -350,13 +350,9 @@ AppearancePanel::AppearancePanel(const AppearanceLayout &layout,
             strings::get("reader.vertical_margins"), "rrVerticalMarginsLess",
             "rrVerticalMarginsMore", 0, kobalt::maximumMarginDesign, 3, {});
     // A drag snaps to these presets. The plus and minus buttons keep steps of 3.
-    // Stops sit evenly along the slider, so the fine steps up to 120 keep most of
-    // its length and the wide margins beyond take coarser steps of 60.
+    // The stops are evenly spaced every 20 units, from 0 to the maximum.
     QVector<int> marginMarks;
-    for (int value = 0; value <= 120; value += 12) {
-        marginMarks.append(value);
-    }
-    for (int value = 180; value <= kobalt::maximumMarginDesign; value += 60) {
+    for (int value = 0; value <= kobalt::maximumMarginDesign; value += 20) {
         marginMarks.append(value);
     }
     marginSlider->setMarkers(marginMarks, ui::SettingSlider::MarkerMode::Stops);

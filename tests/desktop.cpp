@@ -1767,13 +1767,18 @@ void marginPreviewTour(Fixture &fixture, const std::function<bool(const QString 
     const int y = slider->height() / 2;
     QVERIFY(fixture.holdDrag(slider, { slider->width() / 2, y }, { slider->width() * 3 / 4, y },
                              [&] {
-                                 return slider->value() != restored && slider->value() % 12 == 0
+                                 return slider->value() != restored && slider->value() % 20 == 0
                                          && fixture.visible("rrAppearancePreview") == fits
                                          && !fixture.state().value("preview_busy").toBool();
                              }));
     QTRY_VERIFY(settled());
-    while (slider->value() > restored) {
-        QVERIFY(fixture.press("rrNarrower"));
+    // Stops every 20 can fall between the buttons' steps of 3, so return through
+    // the first stop and step up from there.
+    QVERIFY(fixture.holdDrag(slider, { slider->width() * 3 / 4, y }, { 0, y },
+                             [&] { return slider->value() == 0; }));
+    QTRY_VERIFY(settled());
+    while (slider->value() < restored) {
+        QVERIFY(fixture.press("rrWider"));
         QTRY_VERIFY(settled());
     }
     QCOMPARE(slider->value(), restored);

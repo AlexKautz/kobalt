@@ -1538,7 +1538,7 @@ private slots:
             auto *slider = host.window()->findChild<QSlider *>(name);
             QVERIFY(slider);
             QCOMPARE(slider->minimum(), 0);
-            QCOMPARE(slider->maximum(), 120);
+            QCOMPARE(slider->maximum(), kobalt::maximumMarginDesign);
             QCOMPARE(slider->singleStep(), 3);
         }
         QCOMPARE(inspectReader(host)["preview_settings"].toObject()["font_pixels"],
