@@ -50,8 +50,17 @@ public:
         // changed allowance lays the book out again, and a cached or retained layout
         // with the same allowance is reused.
         overflow = hangingPunctuation && columns > 1 ? qMin(sideMargin, gutter / 2) : 0;
-        LVDocView::setPageMargins(
-                columns > 1 ? lvRect(overflow, margins.top, overflow, margins.bottom) : margins);
+        // CREngine lays text out in the viewport minus its margins without a lower
+        // bound. Wide margins on a small screen keep at least the minimum text area:
+        // one column narrows its side margins like the columns above, and the top and
+        // bottom margins shrink in proportion.
+        const int minimumHeight = 80;
+        const int vertical = margins.top + margins.bottom;
+        const int room = qMax(0, h - minimumHeight);
+        const int top = vertical > room ? room * margins.top / vertical : margins.top;
+        const int bottom = vertical > room ? room - top : margins.bottom;
+        LVDocView::setPageMargins(columns > 1 ? lvRect(overflow, top, overflow, bottom)
+                                              : lvRect(sideMargin, top, sideMargin, bottom));
         LVDocView::Resize(columnWidth(), h);
     }
 

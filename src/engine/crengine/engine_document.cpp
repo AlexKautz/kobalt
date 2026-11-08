@@ -628,7 +628,7 @@ void EngineDocument::configure(QSize size, const QJsonObject &settings)
     columns_ = twoColumnsLandscape_ ? (size.width() > size.height() ? 2 : 1)
                                     : qBound(1, saved.value("columns").toInt(1), 2);
     columnSpacing_ = qBound(0, saved.value("column_spacing").toInt(readingPixels(60)),
-                            maximumMarginPixels());
+                            maximumColumnSpacingPixels());
     columnSpacingPercent_ = saved.value("column_spacing_percent").toInt(0);
     if (columnSpacingPercent_ < 100 || columnSpacingPercent_ > 300)
         columnSpacingPercent_ = 0;
@@ -951,11 +951,11 @@ bool EngineDocument::applyAppearance(const QJsonObject &settings, QSize size,
                                          : settings.value("column_spacing").toInt(columnSpacing_);
     const auto widowsOrphans = settings.value("widows_orphans").toString(widowsOrphans_);
     if (!engine_ || (gapPercent != 0 && (gapPercent < 100 || gapPercent > 300)) || columnSpacing < 0
-        || (!gapPercent && columnSpacing > maximumMarginPixels()) || columns < 1 || columns > 2
-        || pixels < minimumFontPixels() || pixels > maximumFontPixels() || spacing < 100
-        || spacing > maximumLineSpacing || margin < 0 || margin > maximumMarginPixels()
-        || topMargin < 0 || topMargin > maximumMarginPixels() || bottomMargin < 0
-        || bottomMargin > maximumMarginPixels() || weight < 0 || weight > 12
+        || (!gapPercent && columnSpacing > maximumColumnSpacingPixels()) || columns < 1
+        || columns > 2 || pixels < minimumFontPixels() || pixels > maximumFontPixels()
+        || spacing < 100 || spacing > maximumLineSpacing || margin < 0
+        || margin > maximumMarginPixels() || topMargin < 0 || topMargin > maximumMarginPixels()
+        || bottomMargin < 0 || bottomMargin > maximumMarginPixels() || weight < 0 || weight > 12
         || !validAlignment(alignment) || !appearance::validTracking(tracking)
         || !appearance::validWordSpacing(wordSpacing)
         || !appearance::validWidowsOrphans(widowsOrphans)

@@ -407,7 +407,7 @@ int main(int argc, char **argv)
                     require(!model.applyAppearance({ { "column_spacing", -1 } })
                                     && !model.applyAppearance(
                                             { { "column_spacing",
-                                                kobalt::maximumMarginPixels() + 1 } }),
+                                                kobalt::maximumColumnSpacingPixels() + 1 } }),
                             "Invalid column spacing was accepted");
                 }
     kobalt::EngineDocument cramped(kobalt::test::readerFonts());

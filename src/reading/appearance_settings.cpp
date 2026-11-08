@@ -254,7 +254,7 @@ QJsonObject bookDefaults(const QJsonObject &preferences)
                 legacy.value(key).isDouble()
                         ? qRound(legacy.value(key).toDouble() * 300 / legacyPpi)
                         : marginDesign(defaults.value(key).toInt()));
-        defaults[key] = readingPixels(qBound(0, design, 120));
+        defaults[key] = readingPixels(qBound(0, design, maximumMarginDesign));
     }
     defaults["word_spacing"] = preferences.value("word_spacing").toInt(100);
     defaults["paragraph_spacing"] = paragraphSpacing(preferences.value("paragraph_spacing"));
@@ -338,7 +338,7 @@ void rememberPageMargins(QJsonObject &preferences, const QJsonObject &state)
     auto margins = preferences.value(pageMarginsKey).toObject();
     for (const auto *key : marginKeys)
         if (state.value(key).isDouble())
-            margins[key] = qBound(0, marginDesign(state.value(key).toInt()), 120);
+            margins[key] = qBound(0, marginDesign(state.value(key).toInt()), maximumMarginDesign);
     if (!margins.isEmpty())
         preferences[pageMarginsKey] = margins;
 }

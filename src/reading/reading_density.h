@@ -58,7 +58,16 @@ inline int defaultMarginPixels()
     return readingPixels(48);
 }
 
+// The largest side, top and bottom margin, in 300 ppi pixels.
+inline constexpr int maximumMarginDesign = 360;
+
 inline int maximumMarginPixels()
+{
+    return readingPixels(maximumMarginDesign);
+}
+
+// Column spacing keeps its own limit, separate from the page margins.
+inline int maximumColumnSpacingPixels()
 {
     return readingPixels(120);
 }
@@ -83,7 +92,7 @@ inline int pixelHalfPoints(int pixels)
     return qRound(pixels * 144.0 / readingPpi.load());
 }
 
-// The margin control counts 300 ppi pixels, from 0 to 120 in steps of 3.
+// The margin control counts 300 ppi pixels, from 0 to maximumMarginDesign in steps of 3.
 inline int marginDesign(int pixels)
 {
     return qRound(pixels * 300.0 / readingPpi.load());

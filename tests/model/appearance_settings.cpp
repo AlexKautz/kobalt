@@ -682,7 +682,7 @@ int main()
                                                              { "bottom_margin_pixels", 12 } });
     initial = appearance::bookDefaults(legacyMargins);
     require(initial.value("margin_pixels").toInt() == 0
-                    && initial.value("top_margin_pixels").toInt() == 120
+                    && initial.value("top_margin_pixels").toInt() == 360
                     && initial.value("bottom_margin_pixels").toInt() == 12,
             "Shared margins did not override legacy values within slider bounds");
     const auto retired =
