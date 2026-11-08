@@ -11,13 +11,23 @@ read -r arch sdk_id < <("$engine" image inspect "$image" --format '{{.Architectu
 mkdir -p "$root/build/android-$arch" "$root/build/gradle"
 release=${KOBALT_ANDROID_RELEASE:-0}
 [[ "$release" == 0 || "$release" == 1 ]] || { echo 'KOBALT_ANDROID_RELEASE must be 0 or 1' >&2; exit 2; }
+# A device profile selects the optimized, tuned build for one tablet. The CPU follows
+# the board name that the tablet reports over USB. Explicit settings below still win.
+device=${KOBALT_ANDROID_DEVICE:-}
+profile=0 profile_cpu=
+case "$device" in
+    '') ;;
+    boox-go-10.3) profile=1 profile_cpu=cortex-a73 ;;  # Qualcomm khaje (SM6225): Cortex-A73 and A53 cores
+    boox-note-max) profile=1 profile_cpu=cortex-a76 ;; # Qualcomm SM8150 (Snapdragon 855): Cortex-A76 and A55 cores
+    *) echo "Unknown KOBALT_ANDROID_DEVICE '$device'; expected boox-go-10.3 or boox-note-max" >&2; exit 2 ;;
+esac
 # An optimized development build compiles like a release but keeps the Kobalt Dev identity and debug key.
-optimized=${KOBALT_ANDROID_OPTIMIZED:-0}
+optimized=${KOBALT_ANDROID_OPTIMIZED:-$profile}
 [[ "$optimized" == 0 || "$optimized" == 1 ]] || { echo 'KOBALT_ANDROID_OPTIMIZED must be 0 or 1' >&2; exit 2; }
-# Optional device tuning: a CPU name for -mtune, and ThinLTO across the application and its dependencies.
-tune_cpu=${KOBALT_ANDROID_TUNE_CPU:-}
+# Optional device tuning: a CPU name for -mtune, and ThinLTO for the application code.
+tune_cpu=${KOBALT_ANDROID_TUNE_CPU:-$profile_cpu}
 [[ -z "$tune_cpu" || "$tune_cpu" =~ ^[a-z0-9.+-]+$ ]] || { echo 'KOBALT_ANDROID_TUNE_CPU must be a CPU name such as cortex-a73' >&2; exit 2; }
-lto=${KOBALT_ANDROID_LTO:-0}
+lto=${KOBALT_ANDROID_LTO:-$profile}
 [[ "$lto" == 0 || "$lto" == 1 ]] || { echo 'KOBALT_ANDROID_LTO must be 0 or 1' >&2; exit 2; }
 if [[ $release == 1 && -z ${KOBALT_RELEASE_VERSION:-} && ! -f $root/source-info.json ]]; then
     echo 'Missing KOBALT_RELEASE_VERSION' >&2; exit 2
